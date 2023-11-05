@@ -29,6 +29,7 @@ async function run() {
 
     const foodCollections = client.db("pizzanDB").collection("allFoods");
 
+    // 
     app.get('/foods', async(req, res) =>{
        const cursor = foodCollections.find()
        console.log(cursor);
