@@ -1,15 +1,20 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require('jsonwebtoken');
 const app = express();
+const cookieParser = require('cookie-parser');
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173"],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
-// console.log(process.env.DB_USER, process.env.DB_PASS);
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xvn4ffv.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -22,6 +27,24 @@ const client = new MongoClient(uri, {
   },
 });
 
+
+const verifyToken = async(req, res, next) =>{
+  const token = req?.cookies?.token;
+  // console.log(req);
+  if(!token){
+    return res.status(401).send({message: 'not authorized'})
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
+    if(err){
+      return res.status(401).send({message: 'Unauthorized'})
+    }
+
+    req.user = decoded;
+    next();
+  })
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -29,6 +52,26 @@ async function run() {
 
     const foodCollections = client.db("pizzanDB").collection("allFoods");
     const myCartCollections = client.db("pizzanDB").collection("myCarts");
+
+
+    // jwt related api
+    app.post('/jwt', (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+      // console.log(token);
+      res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: false
+      })
+      .send({success: true});
+    })
+
+    app.post('/logout', async(req, res) =>{
+      // const user = req.body;
+      res.clearCookie('token', {maxAge: 0}).send({success:true});
+    })
 
     // get all foods
     app.get("/foods", async (req, res) => {
@@ -76,7 +119,11 @@ async function run() {
       const result = await myCartCollections.insertOne(user);
       res.send(result);
     });
-    app.get("/mycarts", async (req, res) => {
+    app.get("/mycarts", verifyToken, async (req, res) => {
+
+      if(req.query.email !== req.user.email){
+        res.status(403).send({message: 'forbidden access'})
+      }
 
       let query = {};
       if(req.query?.email){
@@ -87,7 +134,6 @@ async function run() {
     });
 
     
-
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
