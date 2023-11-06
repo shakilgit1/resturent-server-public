@@ -1,8 +1,8 @@
-const express = require('express')
-const cors = require('cors');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const app = express()
-require('dotenv').config()
+const express = require("express");
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const app = express();
+require("dotenv").config();
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -19,7 +19,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -28,24 +28,59 @@ async function run() {
     await client.connect();
 
     const foodCollections = client.db("pizzanDB").collection("allFoods");
+    const myCartCollections = client.db("pizzanDB").collection("myCarts");
 
-    // 
-    app.get('/foods', async(req, res) =>{
-       const cursor = foodCollections.find()
-       const result = await cursor.toArray();
-       res.send(result);
-    })
-    app.get('/foods/:id', async(req, res) =>{
-       const id = req.params.id;
-       const query = {_id: new ObjectId(id)};
-       const result = await foodCollections.findOne(query);
-       res.send(result);
-    })
-  
+    // get all foods
+    app.get("/foods", async (req, res) => {
+       const page = parseInt(req.query.page);
+       const size = parseInt(req.query.size);
+       const result = await foodCollections
+         .find()
+         .skip(page * size)
+         .limit(size)
+         .toArray();
+      res.send(result);
+    });
+
+    app.get("/foodsCount", async (req, res) => {
+      const count = await foodCollections.estimatedDocumentCount();
+      res.send({ count });
+    });
+
+
+    app.get("/foods/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await foodCollections.findOne(query);
+      res.send(result);
+    });
+    // purchase food
+    app.post("/mycarts", async (req, res) => {
+      const user = req.body;
+      const result = await myCartCollections.insertOne(user);
+      res.send(result);
+    });
+    app.patch("/foods/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedCount = req.body.order_count;
+      const updatedQuantity = req.body.order_count;
+
+      const updatedDoc = {
+        $set: {
+          order_count: updatedCount,
+          quantity: updatedQuantity,
+        },
+      };
+      const result = await foodCollections.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -53,11 +88,10 @@ async function run() {
 }
 run().catch(console.dir);
 
-
-app.get('/', (req, res) => {
-  res.send('Pizzan website')
-})
+app.get("/", (req, res) => {
+  res.send("Pizzan website");
+});
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Example app listening on port ${port}`);
+});
