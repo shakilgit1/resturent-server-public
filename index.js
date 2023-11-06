@@ -41,12 +41,11 @@ async function run() {
          .toArray();
       res.send(result);
     });
-
+    //find foods count
     app.get("/foodsCount", async (req, res) => {
       const count = await foodCollections.estimatedDocumentCount();
       res.send({ count });
     });
-
 
     app.get("/foods/:id", async (req, res) => {
       const id = req.params.id;
@@ -54,12 +53,7 @@ async function run() {
       const result = await foodCollections.findOne(query);
       res.send(result);
     });
-    // purchase food
-    app.post("/mycarts", async (req, res) => {
-      const user = req.body;
-      const result = await myCartCollections.insertOne(user);
-      res.send(result);
-    });
+
     app.patch("/foods/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -75,6 +69,24 @@ async function run() {
       const result = await foodCollections.updateOne(filter, updatedDoc);
       res.send(result);
     });
+
+    // purchase food
+    app.post("/mycarts", async (req, res) => {
+      const user = req.body;
+      const result = await myCartCollections.insertOne(user);
+      res.send(result);
+    });
+    app.get("/mycarts", async (req, res) => {
+
+      let query = {};
+      if(req.query?.email){
+          query = {email: req.query.email}
+      }
+      const result = await myCartCollections.find(query).toArray();
+      res.send(result);
+    });
+
+    
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
