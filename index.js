@@ -52,12 +52,13 @@ async function run() {
 
     const foodCollections = client.db("pizzanDB").collection("allFoods");
     const myCartCollections = client.db("pizzanDB").collection("myCarts");
+    const myFoodCollections = client.db("pizzanDB").collection("myFoods");
 
 
     // jwt related api
     app.post('/jwt', (req, res) => {
       const user = req.body;
-      console.log(user);
+      // console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
       // console.log(token);
       res
@@ -89,6 +90,19 @@ async function run() {
       const count = await foodCollections.estimatedDocumentCount();
       res.send({ count });
     });
+    //find foods count
+    app.get("/foods", async (req, res) => {
+       let shortObj = {};
+       const shortField = req.query.shortField;
+       const shortOrder = req.query.shortOrder;
+
+       if(shortField && shortOrder){
+         shortObj[shortField] = shortOrder;
+       }
+       const cursor = foodCollections.find().sort(shortObj);
+       const result = await cursor.toArray();
+       res.send(result);
+    });
 
     app.get("/foods/:id", async (req, res) => {
       const id = req.params.id;
@@ -96,12 +110,12 @@ async function run() {
       const result = await foodCollections.findOne(query);
       res.send(result);
     });
-
+    // 
     app.patch("/foods/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedCount = req.body.order_count;
-      const updatedQuantity = req.body.order_count;
+      const updatedQuantity = req.body.quantity;
 
       const updatedDoc = {
         $set: {
@@ -132,6 +146,19 @@ async function run() {
       const result = await myCartCollections.find(query).toArray();
       res.send(result);
     });
+    app.delete('/mycarts/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await myCartCollections.deleteOne(query);
+      res.send(result);
+    })
+
+    // my added food 
+    app.post('/add-food', async(req, res) => {
+      const food = req.body;
+      const result = await myFoodCollections.insertOne(food);
+      res.send(result)
+    })
 
     
     // Send a ping to confirm a successful connection
