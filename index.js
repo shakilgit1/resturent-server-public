@@ -75,11 +75,32 @@ async function run() {
     })
 
     // get all foods
+    // app.get("/foods", async (req, res) => {
+    //    const page = parseInt(req.query.page);
+    //    const size = parseInt(req.query.size);
+    //    const result = await foodCollections
+    //      .find()
+    //      .skip(page * size)
+    //      .limit(size)
+    //      .toArray();
+    //   res.send(result);
+    // });
     app.get("/foods", async (req, res) => {
        const page = parseInt(req.query.page);
        const size = parseInt(req.query.size);
+       let queryObj = {}
+       let sortObj = {};
+       const category = req.query.category;
+       const sortField = req.query.sortField;
+       const sortOrder = req.query.sortOrder;
+       if(category){
+        queryObj.category = category
+       }
+       if(sortField && sortOrder){
+         sortObj[sortField] = sortOrder;
+       }
        const result = await foodCollections
-         .find()
+         .find(queryObj).sort(sortObj)
          .skip(page * size)
          .limit(size)
          .toArray();
@@ -90,20 +111,7 @@ async function run() {
       const count = await foodCollections.estimatedDocumentCount();
       res.send({ count });
     });
-    //find foods count
-    app.get("/foods", async (req, res) => {
-       let shortObj = {};
-       const shortField = req.query.shortField;
-       const shortOrder = req.query.shortOrder;
-
-       if(shortField && shortOrder){
-         shortObj[shortField] = shortOrder;
-       }
-       const cursor = foodCollections.find().sort(shortObj);
-       const result = await cursor.toArray();
-       res.send(result);
-    });
-
+    //find food
     app.get("/foods/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
