@@ -82,11 +82,12 @@ async function run() {
        const size = parseInt(req.query.size);
        let queryObj = {}
        let sortObj = {};
-       const category = req.query.category;
+      //  const category = req.query.category;
+       const email = req.query.email;
        const sortField = req.query.sortField;
        const sortOrder = req.query.sortOrder;
-       if(category){
-        queryObj.category = category
+       if(email){
+        queryObj.email = email
        }
        if(sortField && sortOrder){
          sortObj[sortField] = sortOrder;
@@ -130,6 +131,29 @@ async function run() {
       };
       const result = await foodCollections.updateOne(filter, updatedDoc);
       res.send(result);
+    });
+    app.put("/foods/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const options = { upsert: true };
+      const updateProduct = req.body;
+      
+      const updateDoc = {
+        $set: {
+          name: updateProduct.name,
+          made_by: updateProduct.made_by,
+          description: updateProduct.description,
+          origin: updateProduct.origin,
+          image: updateProduct.image,
+          price: updateProduct.price,
+          category: updateProduct.category,
+          email: updateProduct.email,
+          order_count: updateProduct.order_count,
+          quantity: updateProduct.quantity,
+        },
+      };
+    const result = await foodCollections.updateOne(filter, updateDoc, options);
+    res.send(result);
     });
 
     // purchase food
