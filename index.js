@@ -48,11 +48,12 @@ const verifyToken = async(req, res, next) =>{
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const foodCollections = client.db("pizzanDB").collection("allFoods");
     const myCartCollections = client.db("pizzanDB").collection("myCarts");
-    const myFoodCollections = client.db("pizzanDB").collection("myFoods");
+    const usersCollections = client.db("pizzanDB").collection("users");
+    // const myFoodCollections = client.db("pizzanDB").collection("myFoods");
 
 
     // jwt related api
@@ -75,16 +76,7 @@ async function run() {
     })
 
     // get all foods
-    // app.get("/foods", async (req, res) => {
-    //    const page = parseInt(req.query.page);
-    //    const size = parseInt(req.query.size);
-    //    const result = await foodCollections
-    //      .find()
-    //      .skip(page * size)
-    //      .limit(size)
-    //      .toArray();
-    //   res.send(result);
-    // });
+    
     app.get("/foods", async (req, res) => {
        const page = parseInt(req.query.page);
        const size = parseInt(req.query.size);
@@ -111,6 +103,11 @@ async function run() {
       const count = await foodCollections.estimatedDocumentCount();
       res.send({ count });
     });
+    app.post('/foods', async(req, res) => {
+      const food = req.body;
+      const result = await foodCollections.insertOne(food);
+      res.send(result)
+    })
     //find food
     app.get("/foods/:id", async (req, res) => {
       const id = req.params.id;
@@ -162,15 +159,34 @@ async function run() {
     })
 
     // my added food 
-    app.post('/add-food', async(req, res) => {
-      const food = req.body;
-      const result = await myFoodCollections.insertOne(food);
+    // app.post('/add-food', async(req, res) => {
+    //   const food = req.body;
+    //   const result = await myFoodCollections.insertOne(food);
+    //   res.send(result)
+    // })
+
+    // post new users
+    app.post('/users', async(req, res) =>{
+      const user = req.body;
+      const result = await usersCollections.insertOne(user);
       res.send(result)
     })
 
+    app.get('/users', async(req, res) =>{
+      const cursor = usersCollections.find()
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+    app.get('/users/:admin_id', async(req, res) =>{
+      const id = req.params.admin_id;
+      // console.log(id);
+      const query = {admin_id: id}
+      const result =await usersCollections.findOne(query)
+      res.send(result)
+    })
     
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
