@@ -9,7 +9,11 @@ const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "https://pizzan-restaurant.web.app",
+    "https://pizzan-restaurant.firebaseapp.com"
+],
   credentials: true
 }));
 app.use(express.json());
@@ -30,7 +34,7 @@ const client = new MongoClient(uri, {
 
 const verifyToken = async(req, res, next) =>{
   const token = req?.cookies?.token;
-  // console.log(req);
+  // console.log(req?.cookies?.token);
   if(!token){
     return res.status(401).send({message: 'not authorized'})
   }
@@ -182,12 +186,6 @@ async function run() {
       res.send(result);
     })
 
-    // my added food 
-    // app.post('/add-food', async(req, res) => {
-    //   const food = req.body;
-    //   const result = await myFoodCollections.insertOne(food);
-    //   res.send(result)
-    // })
 
     // post new users
     app.post('/users', async(req, res) =>{
